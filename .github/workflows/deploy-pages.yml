@@ -1,0 +1,53 @@
+# Publica SOLO el juego (frontend) en GitHub Pages.
+# El backend debe estar en Render/Railway y su URL va en el secret VITE_API_URL.
+#
+# Antes de usarlo:
+#   1. Settings → Pages → Source: GitHub Actions
+#   2. Settings → Secrets and variables → Actions → New secret:
+#        VITE_API_URL = https://tu-backend.onrender.com
+#   3. En el backend, CORS_ORIGIN = https://<usuario>.github.io
+name: Deploy juego a GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm install
+      - name: Compilar el juego
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          # Para un repo de proyecto la base es /<nombre-del-repo>/
+          BASE_PATH: /${{ github.event.repository.name }}/
+        run: npm run build -w web
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

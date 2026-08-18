@@ -1,0 +1,998 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex" />
+<meta name="theme-color" content="#0d0120" />
+<title>Mala Vida · Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0d0120; --card:#180330; --accent:#F5C518; --text:#fff;
+    --muted:rgba(255,255,255,.5); --line:rgba(245,197,24,.2);
+    --ok:#4ade80; --err:#f87171; --warn:#fb923c; --r:18px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:'DM Sans',system-ui,-apple-system,sans-serif;
+    font-size:16px; line-height:1.45; min-height:100dvh;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:'Syne',sans-serif;font-weight:800;margin:0;letter-spacing:-.01em}
+  h1{font-size:1.35rem}
+  h2{font-size:1.05rem;font-weight:700}
+  h3{font-size:.95rem;font-weight:700}
+  .muted{color:var(--muted)}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.04em}
+
+  /* ---------- Login ---------- */
+  #login{
+    min-height:100dvh; display:none; flex-direction:column;
+    align-items:center; justify-content:center; padding:24px; gap:18px;
+  }
+  #login.on{display:flex}
+  .brand{text-align:center}
+  .brand small{display:block;color:var(--accent);letter-spacing:.22em;font-size:.7rem;font-weight:600;text-transform:uppercase;margin-bottom:6px}
+  .login-box{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px;display:flex;flex-direction:column;gap:12px}
+
+  /* ---------- Layout app ---------- */
+  #app{display:none;min-height:100dvh;flex-direction:column}
+  #app.on{display:flex}
+  header{
+    position:sticky;top:0;z-index:20;background:rgba(13,1,32,.92);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
+    padding:12px 16px calc(12px);display:flex;align-items:center;gap:12px;
+    padding-top:calc(12px + env(safe-area-inset-top));
+  }
+  header h1{flex:1;font-size:1.05rem}
+  main{flex:1;padding:16px 16px 110px;max-width:720px;width:100%;margin:0 auto}
+  section{display:none}
+  section.on{display:block}
+
+  nav{
+    position:fixed;left:0;right:0;bottom:0;z-index:30;
+    display:grid;grid-template-columns:repeat(4,1fr);
+    background:rgba(24,3,48,.96);backdrop-filter:blur(12px);
+    border-top:1px solid var(--line);
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  nav button{
+    background:none;border:0;color:var(--muted);font:inherit;font-weight:600;
+    font-size:.8rem;padding:14px 4px 14px;min-height:56px;cursor:pointer;
+    border-top:2px solid transparent;
+  }
+  nav button.on{color:var(--accent);border-top-color:var(--accent)}
+
+  /* ---------- Piezas ---------- */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:12px}
+  .row{display:flex;gap:10px;align-items:center}
+  .row.wrap{flex-wrap:wrap}
+  .grow{flex:1;min-width:0}
+  .stack{display:flex;flex-direction:column;gap:10px}
+  .between{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .sec-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:18px 0 10px}
+  .sec-head:first-child{margin-top:0}
+
+  input,select,textarea{
+    width:100%;background:#0d0120;color:var(--text);
+    border:1px solid var(--line);border-radius:14px;
+    padding:13px 14px;font:inherit;min-height:48px;
+  }
+  input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px}
+  input[type=date]{min-height:48px}
+  label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:6px;font-weight:500}
+  .field{flex:1;min-width:0}
+
+  button{font-family:inherit}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    min-height:48px;padding:12px 18px;border-radius:14px;border:1px solid transparent;
+    background:var(--accent);color:#12021f;font-weight:600;font-size:1rem;
+    cursor:pointer;width:100%;
+  }
+  .btn:disabled{opacity:.55;cursor:progress}
+  .btn.ghost{background:transparent;border-color:var(--line);color:var(--text)}
+  .btn.sm{min-height:44px;padding:10px 14px;font-size:.9rem;width:auto}
+  .btn.danger{background:var(--err);color:#2a0505}
+  .btn.link{background:none;border:0;color:var(--muted);text-decoration:underline;
+    width:auto;min-height:44px;padding:8px 4px;font-size:.85rem}
+
+  .msg{border-radius:14px;padding:11px 14px;font-size:.9rem;margin-top:10px;display:none}
+  .msg.on{display:block}
+  .msg.ok{background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.4);color:var(--ok)}
+  .msg.err{background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.4);color:var(--err)}
+  .msg.warn{background:rgba(251,146,60,.12);border:1px solid rgba(251,146,60,.4);color:var(--warn)}
+
+  .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+  .stat .k{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+  .stat .v{font-family:'Syne',sans-serif;font-weight:800;font-size:1.7rem;line-height:1.15;margin-top:4px}
+  .stat.hi .v{color:var(--accent)}
+
+  .bar{height:8px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;margin:8px 0 6px}
+  .bar > i{display:block;height:100%;background:var(--accent);border-radius:99px}
+  .bar > i.full{background:var(--err)}
+  .bar > i.unl{background:rgba(245,197,24,.3)}
+  input[type=checkbox]{accent-color:var(--accent);padding:0;border-radius:6px}
+
+  .pill{display:inline-block;padding:4px 10px;border-radius:99px;font-size:.72rem;font-weight:600;
+    border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+  .pill.ok{color:var(--ok);border-color:rgba(74,222,128,.45);background:rgba(74,222,128,.1)}
+  .pill.err{color:var(--err);border-color:rgba(248,113,113,.45);background:rgba(248,113,113,.1)}
+  .pill.warn{color:var(--warn);border-color:rgba(251,146,60,.45);background:rgba(251,146,60,.1)}
+  .pill.acc{color:var(--accent);border-color:var(--line);background:rgba(245,197,24,.1)}
+
+  .item{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:10px}
+  .item.off{opacity:.5}
+  .emoji{font-size:1.5rem;line-height:1}
+  .code{font-size:1.05rem;font-weight:600}
+  .small{font-size:.8rem}
+  .xsmall{font-size:.74rem}
+  .empty{color:var(--muted);text-align:center;padding:26px 10px;font-size:.9rem}
+  .note{font-size:.8rem;color:var(--muted);line-height:1.5}
+  hr{border:0;border-top:1px solid var(--line);margin:14px 0}
+  .danger-zone{border-color:rgba(248,113,113,.35)}
+  .confirm{border:1px solid rgba(251,146,60,.45);background:rgba(251,146,60,.08);
+    border-radius:14px;padding:12px;margin-top:10px}
+  a{color:var(--accent)}
+  .searchbox input{font-size:1.15rem;min-height:56px;font-weight:600}
+</style>
+</head>
+<body>
+
+<!-- ===================== LOGIN ===================== -->
+<div id="login">
+  <div class="brand">
+    <small>Mala Vida Fast Food</small>
+    <h1>Panel de administración</h1>
+  </div>
+  <form class="login-box" id="loginForm">
+    <div>
+      <label for="key">Clave de admin</label>
+      <input id="key" type="password" autocomplete="current-password" placeholder="••••••••" />
+    </div>
+    <button class="btn" type="submit" id="loginBtn">Entrar</button>
+    <div class="msg" id="loginMsg"></div>
+    <p class="note" id="apiNote"></p>
+  </form>
+</div>
+
+<!-- ===================== APP ===================== -->
+<div id="app">
+  <header>
+    <h1>Mala Vida</h1>
+    <span class="pill acc" id="tzPill"></span>
+    <button class="btn link" id="logoutBtn" type="button">Salir</button>
+  </header>
+
+  <main>
+    <!-- ---------- HOY ---------- -->
+    <section id="s-hoy">
+      <div class="row" style="margin-bottom:12px">
+        <div class="field">
+          <label for="sumDate">Fecha</label>
+          <input type="date" id="sumDate" />
+        </div>
+        <button class="btn sm ghost" id="sumRefresh" type="button" style="margin-top:22px">Refrescar</button>
+      </div>
+      <div class="msg" id="sumMsg"></div>
+      <div id="sumStats"></div>
+      <div class="sec-head"><h2>Stock del día</h2></div>
+      <div id="stockList"><div class="empty">Cargando…</div></div>
+    </section>
+
+    <!-- ---------- VERIFICAR ---------- -->
+    <section id="s-ver">
+      <form id="lookupForm" class="searchbox">
+        <label for="q">Número de WhatsApp o código</label>
+        <input id="q" type="text" inputmode="text" autocapitalize="off" autocorrect="off"
+               spellcheck="false" autocomplete="off" placeholder="3001234567 o MV-8K3PQR" />
+        <button class="btn" type="submit" id="lookupBtn" style="margin-top:10px">Buscar</button>
+      </form>
+      <div class="msg" id="verMsg"></div>
+      <div id="verResult"></div>
+    </section>
+
+    <!-- ---------- PREMIOS ---------- -->
+    <section id="s-pre">
+      <div class="row wrap" style="margin-bottom:10px">
+        <div class="field">
+          <label for="rwStatus">Estado</label>
+          <select id="rwStatus">
+            <option value="pending">Pendientes</option>
+            <option value="claimed">Entregados</option>
+            <option value="all">Todos</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="rwDate">Fecha (opcional)</label>
+          <input type="date" id="rwDate" />
+        </div>
+      </div>
+      <div class="row wrap">
+        <button class="btn sm" id="rwLoad" type="button">Buscar</button>
+        <button class="btn sm ghost" id="rwCsv" type="button">Descargar CSV</button>
+        <button class="btn link" id="rwClearDate" type="button">Quitar fecha</button>
+      </div>
+      <div class="msg" id="rwMsg"></div>
+      <div class="sec-head"><h2 id="rwCount">Premios</h2></div>
+      <div id="rwList"><div class="empty">Sin cargar todavía.</div></div>
+    </section>
+
+    <!-- ---------- AJUSTES ---------- -->
+    <section id="s-set">
+      <div class="sec-head"><h2>Catálogo de premios</h2></div>
+      <p class="note" style="margin:0 0 12px">
+        <strong>Stock diario</strong> es la cantidad disponible de CADA día (se reinicia solo);
+        déjalo vacío para ilimitado. <strong>Puntaje mínimo</strong> es lo que hay que hacer para
+        aspirar a ese premio. Si un premio se agota, el jugador baja automáticamente al siguiente
+        de la lista.
+      </p>
+      <div class="msg" id="przMsg"></div>
+      <div id="przList"><div class="empty">Cargando…</div></div>
+
+      <div class="sec-head">
+        <h2>Últimas acciones</h2>
+        <button class="btn link" id="auditRefresh" type="button">Refrescar</button>
+      </div>
+      <div id="auditList"><div class="empty">Cargando…</div></div>
+
+      <div class="sec-head"><h2>Zona peligrosa</h2></div>
+      <div class="card danger-zone">
+        <button class="btn ghost" id="dangerToggle" type="button">Mostrar opciones peligrosas</button>
+        <div id="dangerBody" style="display:none;margin-top:12px">
+          <p class="note" style="margin-top:0">
+            Borra TODAS las partidas, premios, rachas y stock del día. Los jugadores se conservan.
+            No se puede deshacer.
+          </p>
+          <label for="dangerInput">Escribe exactamente <span class="mono">BORRAR TODO</span></label>
+          <input id="dangerInput" type="text" autocapitalize="characters" autocorrect="off" spellcheck="false" />
+          <button class="btn danger" id="dangerBtn" type="button" disabled style="margin-top:10px">
+            Borrar todas las partidas y premios
+          </button>
+          <div class="msg" id="dangerMsg"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <nav>
+    <button type="button" data-tab="hoy" class="on">Hoy</button>
+    <button type="button" data-tab="ver">Verificar</button>
+    <button type="button" data-tab="pre">Premios</button>
+    <button type="button" data-tab="set">Ajustes</button>
+  </nav>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---------- API base: por defecto el mismo origen; ?api=... permite override ----------
+  var qsApi = new URLSearchParams(location.search).get('api');
+  if (qsApi) { try { localStorage.setItem('mv_admin_api', qsApi.replace(/\/+$/, '')); } catch (e) {} }
+  var API = (function () {
+    try { return localStorage.getItem('mv_admin_api') || location.origin; }
+    catch (e) { return location.origin; }
+  })().replace(/\/+$/, '');
+
+  var KEY_STORE = 'mv_admin_key';
+  var adminKey = '';
+  var TZ = 'America/Bogota';
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  // ---------- Utilidades ----------
+  function esc(v) {
+    if (v === null || v === undefined) return '';
+    return String(v).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  var dtFmt = new Intl.DateTimeFormat('es-CO', { dateStyle: 'short', timeStyle: 'short' });
+  var dFmt = new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium' });
+  var nFmt = new Intl.NumberFormat('es-CO');
+
+  function fmtDT(iso) {
+    if (!iso) return '—';
+    var d = new Date(iso);
+    return isNaN(d.getTime()) ? String(iso) : dtFmt.format(d);
+  }
+  function fmtDay(isoDate) {
+    if (!isoDate) return '—';
+    var p = String(isoDate).slice(0, 10).split('-');
+    if (p.length !== 3) return String(isoDate);
+    var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+    return isNaN(d.getTime()) ? String(isoDate) : dFmt.format(d);
+  }
+  function num(n) { return nFmt.format(Number(n || 0)); }
+
+  function todayISO() {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit'
+    }).format(new Date());
+  }
+
+  function setMsg(el, text, kind) {
+    if (!text) { el.className = 'msg'; el.textContent = ''; return; }
+    el.className = 'msg on ' + (kind || 'ok');
+    el.textContent = text;
+  }
+
+  /** Deshabilita el botón y muestra "…" mientras corre la promesa. */
+  function busy(btn, fn) {
+    var old = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '…';
+    return Promise.resolve().then(fn).then(
+      function (r) { btn.disabled = false; btn.textContent = old; return r; },
+      function (e) { btn.disabled = false; btn.textContent = old; throw e; }
+    );
+  }
+
+  function ApiError(status, message) { this.status = status; this.message = message; }
+  ApiError.prototype = Object.create(Error.prototype);
+
+  /** Todas las llamadas llevan X-Admin-Key. Un 403 devuelve al login. */
+  function request(path, opts) {
+    opts = opts || {};
+    var init = { method: opts.method || 'GET', headers: { 'X-Admin-Key': adminKey } };
+    if (opts.body) {
+      init.headers['Content-Type'] = 'application/json';
+      init.body = JSON.stringify(opts.body);
+    }
+    return fetch(API + path, init).then(function (res) {
+      return res.text().then(function (txt) {
+        var data = null;
+        try { data = txt ? JSON.parse(txt) : null; } catch (e) { data = null; }
+        if (res.status === 403) {
+          logout('Clave inválida');
+          throw new ApiError(403, 'Clave inválida');
+        }
+        if (!res.ok) {
+          throw new ApiError(res.status, (data && data.error) || ('Error ' + res.status));
+        }
+        return data;
+      });
+    }, function () {
+      throw new ApiError(0, 'Sin conexión con el servidor');
+    });
+  }
+
+  function errText(e) {
+    return (e && e.message) ? e.message : 'Ocurrió un error';
+  }
+
+  // ---------- Login / sesión ----------
+  function showLogin(msg) {
+    $('app').classList.remove('on');
+    $('login').classList.add('on');
+    if (msg) setMsg($('loginMsg'), msg, 'err'); else setMsg($('loginMsg'), '');
+    $('key').value = '';
+  }
+  function showApp() {
+    $('login').classList.remove('on');
+    $('app').classList.add('on');
+  }
+  function logout(msg) {
+    adminKey = '';
+    try { localStorage.removeItem(KEY_STORE); } catch (e) {}
+    showLogin(msg || '');
+  }
+
+  function validateKey(candidate) {
+    return fetch(API + '/api/admin/ping', { headers: { 'X-Admin-Key': candidate } })
+      .then(function (res) {
+        if (!res.ok) return res.text().then(function (t) {
+          var d = null; try { d = JSON.parse(t); } catch (e) {}
+          throw new ApiError(res.status, (d && d.error) || (res.status === 403 ? 'Clave inválida' : 'Error ' + res.status));
+        });
+        return res.json();
+      }, function () { throw new ApiError(0, 'Sin conexión con el servidor'); });
+  }
+
+  function enter(candidate, ping) {
+    adminKey = candidate;
+    try { localStorage.setItem(KEY_STORE, candidate); } catch (e) {}
+    if (ping && ping.timezone) TZ = ping.timezone;
+    $('tzPill').textContent = fmtDay(todayISO());
+    showApp();
+    $('sumDate').value = todayISO();
+    loadSummary();
+  }
+
+  $('loginForm').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var candidate = $('key').value.trim();
+    setMsg($('loginMsg'), '');
+    if (!candidate) { setMsg($('loginMsg'), 'Escribe la clave', 'err'); return; }
+    busy($('loginBtn'), function () {
+      return validateKey(candidate).then(function (ping) { enter(candidate, ping); });
+    }).catch(function (e) { setMsg($('loginMsg'), errText(e), 'err'); });
+  });
+
+  $('logoutBtn').addEventListener('click', function () { logout(''); });
+
+  // ---------- Pestañas ----------
+  var loaded = { pre: false, set: false };
+  Array.prototype.forEach.call(document.querySelectorAll('nav button'), function (b) {
+    b.addEventListener('click', function () {
+      var tab = b.getAttribute('data-tab');
+      Array.prototype.forEach.call(document.querySelectorAll('nav button'), function (x) {
+        x.classList.toggle('on', x === b);
+      });
+      Array.prototype.forEach.call(document.querySelectorAll('section'), function (s) {
+        s.classList.toggle('on', s.id === 's-' + tab);
+      });
+      window.scrollTo(0, 0);
+      if (tab === 'ver') $('q').focus();
+      if (tab === 'pre' && !loaded.pre) { loaded.pre = true; loadRewards(); }
+      if (tab === 'set' && !loaded.set) { loaded.set = true; loadPrizes(); loadAudit(); }
+    });
+  });
+  $('s-hoy').classList.add('on');
+
+  // =====================================================================
+  // 1. HOY
+  // =====================================================================
+  function statCard(k, v, hi) {
+    return '<div class="stat' + (hi ? ' hi' : '') + '"><div class="k">' + esc(k) +
+      '</div><div class="v">' + esc(v) + '</div></div>';
+  }
+
+  function loadSummary() {
+    var date = $('sumDate').value;
+    setMsg($('sumMsg'), '');
+    $('stockList').innerHTML = '<div class="empty">Cargando…</div>';
+    return request('/api/admin/summary' + (date ? '?date=' + encodeURIComponent(date) : ''))
+      .then(function (d) {
+        if (d.timezone) TZ = d.timezone;
+        var g = d.games || {}, p = d.players || {};
+        $('sumStats').innerHTML =
+          '<div class="stats">' +
+          statCard('Partidas', num(g.total)) +
+          statCard('Jugadores nuevos', num(p.new)) +
+          statCard('Mejor puntaje', num(g.bestScore), true) +
+          statCard('Promedio', num(g.avgScore)) +
+          '</div>' +
+          '<div class="stat" style="margin-top:10px">' +
+          '<div class="k">Premios pendientes de entregar</div>' +
+          '<div class="v">' + num(d.pendingRewards) + '</div>' +
+          '<div class="small muted">Jugadores registrados en total: ' + num(p.total) + '</div>' +
+          '</div>';
+        renderStock(d.stock || [], d.date || date || todayISO());
+      })
+      .catch(function (e) {
+        setMsg($('sumMsg'), errText(e), 'err');
+        $('stockList').innerHTML = '<div class="empty">No se pudo cargar.</div>';
+      });
+  }
+
+  function renderStock(stock, date) {
+    var host = $('stockList');
+    host.innerHTML = '';
+    if (!stock.length) { host.innerHTML = '<div class="empty">No hay premios configurados.</div>'; return; }
+
+    stock.forEach(function (s) {
+      var el = document.createElement('div');
+      el.className = 'item' + (s.active ? '' : ' off');
+      var pct = s.unlimited ? 0 : (s.limit > 0 ? Math.min(100, Math.round((s.issued / s.limit) * 100)) : 100);
+      var quedan = s.unlimited ? 'Ilimitado'
+        : (s.remaining > 0 ? 'Quedan ' + num(s.remaining) : 'Agotado');
+      var pillCls = s.unlimited ? 'acc' : (s.remaining > 0 ? 'ok' : 'err');
+
+      el.innerHTML =
+        '<div class="between">' +
+          '<div class="row grow"><span class="emoji">' + esc(s.emoji) + '</span>' +
+          '<div class="grow"><div style="font-weight:600">' + esc(s.label) + '</div>' +
+          '<div class="xsmall muted">Desde ' + num(s.minScore) + ' pts' +
+          (s.active ? '' : ' · inactivo') + '</div></div></div>' +
+          '<span class="pill ' + pillCls + '">' + esc(quedan) + '</span>' +
+        '</div>' +
+        '<div class="bar"><i class="' + (s.unlimited ? 'unl' : (s.remaining === 0 ? 'full' : '')) +
+          '" style="width:' + (s.unlimited ? 100 : pct) + '%"></i></div>' +
+        '<div class="xsmall muted">' + num(s.issued) + ' entregados' +
+          (s.unlimited ? ' · sin tope' : ' de ' + num(s.limit)) + '</div>' +
+        '<div class="row" style="margin-top:10px">' +
+          '<input class="grow" type="number" min="0" step="1" ' +
+            'value="' + (s.unlimited ? '' : esc(s.limit)) + '" ' +
+            'placeholder="' + (s.unlimited ? 'ilimitado' : '0') + '" aria-label="Límite de hoy" />' +
+          '<button class="btn sm ghost" type="button">Guardar</button>' +
+        '</div>' +
+        '<div class="msg"></div>';
+
+      var input = el.querySelector('input');
+      var btn = el.querySelector('button');
+      var msg = el.querySelector('.msg');
+
+      btn.addEventListener('click', function () {
+        var v = input.value.trim();
+        if (v === '' || isNaN(Number(v))) { setMsg(msg, 'Escribe un número (0 o más)', 'err'); return; }
+        busy(btn, function () {
+          return request('/api/admin/stock', {
+            method: 'POST',
+            body: { date: date, prizeKey: s.key, limit: Math.max(0, Math.floor(Number(v))) }
+          });
+        }).then(function () {
+          setMsg(msg, 'Límite actualizado para ' + fmtDay(date), 'ok');
+          loadSummary();
+        }).catch(function (e) { setMsg(msg, errText(e), 'err'); });
+      });
+
+      host.appendChild(el);
+    });
+  }
+
+  $('sumRefresh').addEventListener('click', function () {
+    busy($('sumRefresh'), loadSummary).catch(function () {});
+  });
+  $('sumDate').addEventListener('change', function () { loadSummary(); });
+
+  // =====================================================================
+  // 2. VERIFICAR
+  // =====================================================================
+  var STATUS_LABEL = { pending: 'Pendiente', claimed: 'Entregado', expired: 'Vencido', void: 'Anulado' };
+  var STATUS_PILL = { pending: 'acc', claimed: 'ok', expired: 'warn', void: 'err' };
+
+  // Si parece código (tiene letras) lo pasamos a mayúsculas; los números se dejan tal cual.
+  $('q').addEventListener('input', function () {
+    var v = $('q').value;
+    if (/[a-zA-Z]/.test(v)) {
+      var pos = $('q').selectionStart;
+      $('q').value = v.toUpperCase();
+      try { $('q').setSelectionRange(pos, pos); } catch (e) {}
+    }
+  });
+
+  $('lookupForm').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    doLookup();
+  });
+
+  function doLookup() {
+    var q = $('q').value.trim();
+    setMsg($('verMsg'), '');
+    if (!q) { setMsg($('verMsg'), 'Escribe un número o un código', 'err'); return; }
+    $('verResult').innerHTML = '';
+    busy($('lookupBtn'), function () {
+      return request('/api/admin/lookup?q=' + encodeURIComponent(q));
+    }).then(function (d) {
+      if (!d || !d.found) {
+        setMsg($('verMsg'), (d && d.reason) || 'No se encontró nada', 'warn');
+        return;
+      }
+      renderLookup(d);
+    }).catch(function (e) { setMsg($('verMsg'), errText(e), 'err'); });
+  }
+
+  function renderLookup(d) {
+    var host = $('verResult');
+    host.innerHTML = '';
+    var p = d.player || {}, st = d.streak || {}, s = d.stats || {};
+
+    // --- Ficha del jugador ---
+    var card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML =
+      '<div class="between">' +
+        '<div class="grow"><h2 class="mono">' + esc(p.phone) + '</h2>' +
+        '<div class="xsmall muted">Desde ' + esc(fmtDT(p.createdAt)) + '</div></div>' +
+        (p.blocked ? '<span class="pill err">Bloqueado</span>'
+                   : '<span class="pill ok">Activo</span>') +
+      '</div>' +
+      '<div class="stats" style="margin-top:12px">' +
+        statCard('Jugó hoy', s.playedToday ? 'Sí' : 'No') +
+        statCard('Mejor puntaje', num(s.bestScore), true) +
+        statCard('Racha actual', num(st.current) + ' d') +
+        statCard('Mejor racha', num(st.best) + ' d') +
+      '</div>' +
+      '<div class="xsmall muted" style="margin-top:10px">' +
+        num(s.totalGames) + ' partidas · última jugada: ' + esc(fmtDay(st.lastPlayedDate)) +
+      '</div>';
+    host.appendChild(card);
+
+    // --- Premios ---
+    var head = document.createElement('div');
+    head.className = 'sec-head';
+    head.innerHTML = '<h2>Premios (' + (d.rewards ? d.rewards.length : 0) + ')</h2>';
+    host.appendChild(head);
+
+    if (!d.rewards || !d.rewards.length) {
+      var e0 = document.createElement('div');
+      e0.className = 'empty';
+      e0.textContent = 'Este jugador no tiene premios.';
+      host.appendChild(e0);
+    } else {
+      d.rewards.forEach(function (r) { host.appendChild(rewardNode(r, host)); });
+    }
+
+    // --- Acciones secundarias ---
+    var actions = document.createElement('div');
+    actions.className = 'card';
+    actions.style.marginTop = '14px';
+    actions.innerHTML =
+      '<h3 class="muted">Acciones</h3>' +
+      '<div class="row wrap" style="margin-top:10px">' +
+        '<button class="btn sm ghost" data-a="block">' +
+          (p.blocked ? 'Desbloquear número' : 'Bloquear número') + '</button>' +
+        '<button class="btn sm ghost" data-a="reset">Dejar jugar otra vez hoy</button>' +
+      '</div>' +
+      '<div data-slot="confirm"></div>' +
+      '<div class="msg"></div>';
+    host.appendChild(actions);
+
+    var aMsg = actions.querySelector('.msg');
+    var slot = actions.querySelector('[data-slot=confirm]');
+
+    actions.querySelector('[data-a=block]').addEventListener('click', function () {
+      var btn = this;
+      var next = !p.blocked;
+      busy(btn, function () {
+        return request('/api/admin/player/block', { method: 'POST', body: { phone: p.phone, blocked: next } });
+      }).then(function () {
+        p.blocked = next;
+        btn.textContent = next ? 'Desbloquear número' : 'Bloquear número';
+        setMsg(aMsg, next ? 'Número bloqueado' : 'Número desbloqueado', next ? 'warn' : 'ok');
+        var pill = card.querySelector('.pill');
+        pill.className = 'pill ' + (next ? 'err' : 'ok');
+        pill.textContent = next ? 'Bloqueado' : 'Activo';
+      }).catch(function (e) { setMsg(aMsg, errText(e), 'err'); });
+    });
+
+    // Confirmación en pantalla (nada de confirm() del navegador).
+    actions.querySelector('[data-a=reset]').addEventListener('click', function () {
+      if (slot.firstChild) { slot.innerHTML = ''; return; }
+      slot.innerHTML =
+        '<div class="confirm"><div class="small">Se borrará la partida de hoy de este número ' +
+        'para que pueda volver a jugar. ¿Continuar?</div>' +
+        '<div class="row" style="margin-top:10px">' +
+        '<button class="btn sm" data-c="yes">Sí, dejarlo jugar</button>' +
+        '<button class="btn sm ghost" data-c="no">Cancelar</button></div></div>';
+      slot.querySelector('[data-c=no]').addEventListener('click', function () { slot.innerHTML = ''; });
+      slot.querySelector('[data-c=yes]').addEventListener('click', function () {
+        var yes = this;
+        busy(yes, function () {
+          return request('/api/admin/player/reset-today', { method: 'POST', body: { phone: p.phone } });
+        }).then(function (res) {
+          slot.innerHTML = '';
+          setMsg(aMsg, 'Listo: ' + (res && res.removed ? res.removed : 0) + ' partida(s) de hoy borrada(s)', 'ok');
+        }).catch(function (e) { setMsg(aMsg, errText(e), 'err'); });
+      });
+    });
+  }
+
+  /** Tarjeta de un premio, con entrega y anulación. */
+  function rewardNode(r, host) {
+    var el = document.createElement('div');
+    el.className = 'item' + (r.status === 'pending' ? '' : ' off');
+
+    var pending = r.status === 'pending';
+    var html =
+      '<div class="between">' +
+        '<div class="row grow"><span class="emoji">' + esc(r.emoji) + '</span>' +
+        '<div class="grow"><div class="code mono">' + esc(r.code) + '</div>' +
+        '<div class="small">' + esc(r.label) + '</div></div></div>' +
+        '<span class="pill ' + (STATUS_PILL[r.status] || '') + '" data-st>' +
+          esc(STATUS_LABEL[r.status] || r.status) + '</span>' +
+      '</div>' +
+      '<div class="xsmall muted" style="margin-top:8px" data-meta>' +
+        'Emitido ' + esc(fmtDay(r.issuedDate)) +
+        (r.score !== null && r.score !== undefined ? ' · ' + num(r.score) + ' pts' : '') +
+        ' · vence ' + esc(fmtDT(r.validUntil)) +
+        (r.claimedAt ? ' · entregado ' + esc(fmtDT(r.claimedAt)) : '') +
+      '</div>';
+
+    if (pending) {
+      html += '<button class="btn" type="button" data-a="claim" style="margin-top:12px">Marcar entregado</button>';
+    }
+    html += '<div class="row wrap" style="margin-top:6px">' +
+      (r.whatsappUrl ? '<a class="btn link" href="' + esc(r.whatsappUrl) + '" target="_blank" rel="noopener">Abrir WhatsApp</a>' : '') +
+      (pending ? '<button class="btn link" type="button" data-a="void">Anular premio</button>' : '') +
+      '</div><div data-slot="confirm"></div><div class="msg"></div>';
+
+    el.innerHTML = html;
+    var msg = el.querySelector('.msg');
+    var slot = el.querySelector('[data-slot=confirm]');
+
+    var claimBtn = el.querySelector('[data-a=claim]');
+    if (claimBtn) {
+      claimBtn.addEventListener('click', function () {
+        busy(claimBtn, function () {
+          return request('/api/admin/claim', { method: 'POST', body: { code: r.code } });
+        }).then(function (res) {
+          r.status = 'claimed';
+          r.claimedAt = (res && res.reward && res.reward.claimedAt) || new Date().toISOString();
+          var fresh = rewardNode(r, host);
+          el.parentNode.replaceChild(fresh, el);
+          setMsg(fresh.querySelector('.msg'), 'ENTREGADO a las ' + fmtDT(r.claimedAt), 'ok');
+        }).catch(function (e) {
+          // El backend manda el motivo exacto (ya entregado, vencido, anulado…).
+          setMsg(msg, errText(e), 'err');
+        });
+      });
+    }
+
+    var voidBtn = el.querySelector('[data-a=void]');
+    if (voidBtn) {
+      voidBtn.addEventListener('click', function () {
+        if (slot.firstChild) { slot.innerHTML = ''; return; }
+        slot.innerHTML =
+          '<div class="confirm"><div class="small">¿Anular el premio ' + esc(r.code) +
+          '? El jugador ya no podrá reclamarlo.</div>' +
+          '<div class="row" style="margin-top:10px">' +
+          '<button class="btn sm danger" data-c="yes">Sí, anular</button>' +
+          '<button class="btn sm ghost" data-c="no">Cancelar</button></div></div>';
+        slot.querySelector('[data-c=no]').addEventListener('click', function () { slot.innerHTML = ''; });
+        slot.querySelector('[data-c=yes]').addEventListener('click', function () {
+          var yes = this;
+          busy(yes, function () {
+            return request('/api/admin/void', { method: 'POST', body: { code: r.code } });
+          }).then(function () {
+            r.status = 'void';
+            var fresh = rewardNode(r, host);
+            el.parentNode.replaceChild(fresh, el);
+            setMsg(fresh.querySelector('.msg'), 'Premio anulado', 'warn');
+          }).catch(function (e) { setMsg(msg, errText(e), 'err'); });
+        });
+      });
+    }
+
+    return el;
+  }
+
+  // =====================================================================
+  // 3. PREMIOS
+  // =====================================================================
+  function loadRewards() {
+    var status = $('rwStatus').value;
+    var date = $('rwDate').value;
+    setMsg($('rwMsg'), '');
+    $('rwList').innerHTML = '<div class="empty">Cargando…</div>';
+    var qs = '?status=' + encodeURIComponent(status) + (date ? '&date=' + encodeURIComponent(date) : '');
+    return request('/api/admin/rewards' + qs).then(function (d) {
+      var list = (d && d.rewards) || [];
+      $('rwCount').textContent = 'Premios (' + num(d && d.total ? d.total : list.length) + ')';
+      var host = $('rwList');
+      host.innerHTML = '';
+      if (!list.length) { host.innerHTML = '<div class="empty">No hay premios con ese filtro.</div>'; return; }
+      list.forEach(function (r) { host.appendChild(rewardRow(r)); });
+    }).catch(function (e) {
+      setMsg($('rwMsg'), errText(e), 'err');
+      $('rwList').innerHTML = '<div class="empty">No se pudo cargar.</div>';
+    });
+  }
+
+  /** Fila compacta de la lista de entregas. */
+  function rewardRow(r) {
+    var el = document.createElement('div');
+    el.className = 'item' + (r.status === 'pending' ? '' : ' off');
+    el.innerHTML =
+      '<div class="between">' +
+        '<div class="row grow"><span class="emoji">' + esc(r.emoji) + '</span>' +
+        '<div class="grow"><div class="mono" style="font-weight:600">' + esc(r.code) + '</div>' +
+        '<div class="xsmall muted">' + esc(r.label) + ' · <span class="mono">' + esc(r.phone || 'sin número') + '</span></div>' +
+        '</div></div>' +
+        '<span class="pill ' + (STATUS_PILL[r.status] || '') + '">' +
+          esc(STATUS_LABEL[r.status] || r.status) + '</span>' +
+      '</div>' +
+      '<div class="xsmall muted" style="margin-top:6px">' +
+        esc(fmtDay(r.issuedDate)) +
+        (r.score !== null && r.score !== undefined ? ' · ' + num(r.score) + ' pts' : '') +
+        ' · ' + esc(r.source || '') +
+        (r.claimedAt ? ' · entregado ' + esc(fmtDT(r.claimedAt)) : '') +
+      '</div>' +
+      (r.status === 'pending'
+        ? '<button class="btn sm" type="button" style="margin-top:10px;width:100%">Entregar</button>' : '') +
+      '<div class="msg"></div>';
+
+    var btn = el.querySelector('button');
+    var msg = el.querySelector('.msg');
+    if (btn) {
+      btn.addEventListener('click', function () {
+        busy(btn, function () {
+          return request('/api/admin/claim', { method: 'POST', body: { code: r.code } });
+        }).then(function (res) {
+          r.status = 'claimed';
+          r.claimedAt = (res && res.reward && res.reward.claimedAt) || new Date().toISOString();
+          var fresh = rewardRow(r);
+          el.parentNode.replaceChild(fresh, el);
+          setMsg(fresh.querySelector('.msg'), 'ENTREGADO a las ' + fmtDT(r.claimedAt), 'ok');
+        }).catch(function (e) { setMsg(msg, errText(e), 'err'); });
+      });
+    }
+    return el;
+  }
+
+  $('rwLoad').addEventListener('click', function () {
+    busy($('rwLoad'), loadRewards).catch(function () {});
+  });
+  $('rwStatus').addEventListener('change', loadRewards);
+  $('rwDate').addEventListener('change', loadRewards);
+  $('rwClearDate').addEventListener('click', function () { $('rwDate').value = ''; loadRewards(); });
+
+  // El endpoint de CSV acepta la clave por query param.
+  $('rwCsv').addEventListener('click', function () {
+    var date = $('rwDate').value;
+    var url = API + '/api/admin/export.csv?key=' + encodeURIComponent(adminKey) +
+      (date ? '&date=' + encodeURIComponent(date) : '');
+    window.open(url, '_blank', 'noopener');
+    setMsg($('rwMsg'), 'Abriendo el CSV en otra pestaña…', 'ok');
+  });
+
+  // =====================================================================
+  // 4. AJUSTES
+  // =====================================================================
+  function loadPrizes() {
+    setMsg($('przMsg'), '');
+    $('przList').innerHTML = '<div class="empty">Cargando…</div>';
+    return request('/api/admin/prizes').then(function (d) {
+      var list = (d && d.prizes) || [];
+      var host = $('przList');
+      host.innerHTML = '';
+      if (!list.length) { host.innerHTML = '<div class="empty">Sin premios en el catálogo.</div>'; return; }
+      list.forEach(function (p) { host.appendChild(prizeCard(p)); });
+    }).catch(function (e) {
+      setMsg($('przMsg'), errText(e), 'err');
+      $('przList').innerHTML = '<div class="empty">No se pudo cargar.</div>';
+    });
+  }
+
+  function prizeCard(p) {
+    var el = document.createElement('div');
+    el.className = 'card';
+    var id = 'p_' + String(p.key).replace(/[^a-z0-9_]/gi, '');
+    el.innerHTML =
+      '<div class="between">' +
+        '<div class="row grow"><span class="emoji">' + esc(p.emoji) + '</span>' +
+        '<div><div style="font-weight:600">' + esc(p.label) + '</div>' +
+        '<div class="xsmall muted mono">' + esc(p.key) + ' · prioridad ' + esc(p.priority) + '</div></div></div>' +
+        '<span class="pill ' + (p.active ? 'ok' : '') + '">' + (p.active ? 'Activo' : 'Inactivo') + '</span>' +
+      '</div>' +
+      '<div style="margin-top:12px">' +
+        '<label for="' + id + '_l">Nombre</label>' +
+        '<input id="' + id + '_l" type="text" data-f="label" value="' + esc(p.label) + '" />' +
+      '</div>' +
+      '<div class="row" style="margin-top:10px">' +
+        '<div class="field"><label for="' + id + '_m">Puntaje mínimo</label>' +
+        '<input id="' + id + '_m" type="number" min="0" step="1" data-f="minScore" value="' + esc(p.minScore) + '" /></div>' +
+        '<div class="field"><label for="' + id + '_s">Stock diario</label>' +
+        '<input id="' + id + '_s" type="number" min="0" step="1" data-f="dailyStock" placeholder="ilimitado" value="' +
+          (p.dailyStock === null || p.dailyStock === undefined ? '' : esc(p.dailyStock)) + '" /></div>' +
+      '</div>' +
+      '<div class="row" style="margin-top:12px">' +
+        '<label style="margin:0;flex:1;color:var(--text)" for="' + id + '_a">Premio activo</label>' +
+        '<input id="' + id + '_a" type="checkbox" data-f="active" style="width:24px;height:24px;min-height:24px;flex:0 0 auto"' +
+          (p.active ? ' checked' : '') + ' />' +
+      '</div>' +
+      '<button class="btn sm ghost" type="button" style="margin-top:12px;width:100%">Guardar</button>' +
+      '<div class="msg"></div>';
+
+    var btn = el.querySelector('button');
+    var msg = el.querySelector('.msg');
+    var f = {
+      label: el.querySelector('[data-f=label]'),
+      minScore: el.querySelector('[data-f=minScore]'),
+      dailyStock: el.querySelector('[data-f=dailyStock]'),
+      active: el.querySelector('[data-f=active]')
+    };
+
+    btn.addEventListener('click', function () {
+      var body = { key: p.key };
+      var label = f.label.value.trim();
+      if (!label) { setMsg(msg, 'El nombre no puede quedar vacío', 'err'); return; }
+      if (label !== p.label) body.label = label;
+
+      var ms = f.minScore.value.trim();
+      if (ms === '' || isNaN(Number(ms))) { setMsg(msg, 'Puntaje mínimo inválido', 'err'); return; }
+      if (Number(ms) !== Number(p.minScore)) body.minScore = Math.max(0, Math.floor(Number(ms)));
+
+      var ds = f.dailyStock.value.trim();
+      var dsVal = ds === '' ? null : Math.max(0, Math.floor(Number(ds)));
+      if (ds !== '' && isNaN(Number(ds))) { setMsg(msg, 'Stock diario inválido', 'err'); return; }
+      var prev = (p.dailyStock === null || p.dailyStock === undefined) ? null : Number(p.dailyStock);
+      if (dsVal !== prev) body.dailyStock = dsVal;
+
+      if (f.active.checked !== !!p.active) body.active = f.active.checked;
+
+      if (Object.keys(body).length === 1) { setMsg(msg, 'No hay cambios que guardar', 'warn'); return; }
+
+      busy(btn, function () {
+        return request('/api/admin/prizes', { method: 'POST', body: body });
+      }).then(function (res) {
+        var np = (res && res.prize) || {};
+        p.label = np.label !== undefined ? np.label : label;
+        p.minScore = np.minScore !== undefined ? np.minScore : p.minScore;
+        p.dailyStock = np.dailyStock !== undefined ? np.dailyStock : dsVal;
+        p.active = np.active !== undefined ? np.active : f.active.checked;
+        setMsg(msg, 'Guardado', 'ok');
+      }).catch(function (e) { setMsg(msg, errText(e), 'err'); });
+    });
+
+    return el;
+  }
+
+  function loadAudit() {
+    $('auditList').innerHTML = '<div class="empty">Cargando…</div>';
+    return request('/api/admin/audit').then(function (d) {
+      var list = (d && d.audit) || [];
+      var host = $('auditList');
+      host.innerHTML = '';
+      if (!list.length) { host.innerHTML = '<div class="empty">Todavía no hay acciones registradas.</div>'; return; }
+      list.forEach(function (a) {
+        var detail = a.detail;
+        if (detail && typeof detail === 'object') {
+          try { detail = JSON.stringify(detail); } catch (e) { detail = ''; }
+        }
+        var el = document.createElement('div');
+        el.className = 'item';
+        el.style.padding = '12px 14px';
+        el.innerHTML =
+          '<div class="between"><span class="mono small" style="font-weight:600">' + esc(a.action) + '</span>' +
+          '<span class="xsmall muted">' + esc(fmtDT(a.createdAt)) + '</span></div>' +
+          (detail ? '<div class="xsmall muted mono" style="margin-top:4px;word-break:break-all">' + esc(detail) + '</div>' : '') +
+          '<div class="xsmall muted">' + esc(a.actor || 'admin') + '</div>';
+        host.appendChild(el);
+      });
+    }).catch(function (e) {
+      $('auditList').innerHTML = '<div class="empty">' + esc(errText(e)) + '</div>';
+    });
+  }
+
+  $('auditRefresh').addEventListener('click', function () {
+    busy($('auditRefresh'), loadAudit).catch(function () {});
+  });
+
+  // --- Zona peligrosa ---
+  $('dangerToggle').addEventListener('click', function () {
+    var body = $('dangerBody');
+    var open = body.style.display !== 'none';
+    body.style.display = open ? 'none' : 'block';
+    this.textContent = open ? 'Mostrar opciones peligrosas' : 'Ocultar';
+    if (open) { $('dangerInput').value = ''; $('dangerBtn').disabled = true; setMsg($('dangerMsg'), ''); }
+  });
+
+  $('dangerInput').addEventListener('input', function () {
+    $('dangerBtn').disabled = this.value !== 'BORRAR TODO';
+  });
+
+  $('dangerBtn').addEventListener('click', function () {
+    if ($('dangerInput').value !== 'BORRAR TODO') return;
+    busy($('dangerBtn'), function () {
+      return request('/api/admin/reset-all', { method: 'POST', body: { confirm: 'BORRAR TODO' } });
+    }).then(function () {
+      setMsg($('dangerMsg'), 'Listo: se borraron partidas, premios, rachas y stock.', 'ok');
+      $('dangerInput').value = '';
+      $('dangerBtn').disabled = true;
+      loadSummary();
+      loadAudit();
+    }).catch(function (e) { setMsg($('dangerMsg'), errText(e), 'err'); });
+  });
+
+  // =====================================================================
+  // Arranque: si hay clave guardada, entra solo.
+  // =====================================================================
+  $('apiNote').textContent = API === location.origin ? '' : 'Servidor: ' + API;
+
+  var saved = '';
+  try { saved = localStorage.getItem(KEY_STORE) || ''; } catch (e) {}
+
+  if (saved) {
+    validateKey(saved).then(function (ping) {
+      enter(saved, ping);
+    }, function (e) {
+      if (e && e.status === 403) logout('Clave inválida');
+      else { adminKey = saved; showLogin(errText(e)); }
+    });
+  } else {
+    showLogin('');
+  }
+})();
+</script>
+</body>
+</html>

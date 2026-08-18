@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@400;600;700;800;900&display=swap');
+@import 'tailwindcss';
+
+/* === Marca Mala Vida: morado profundo + amarillo oro === */
+@theme {
+  --color-bg: #1e0a3c;
+  --color-bg-deep: #0d0520;
+  --color-card: #2d1154;
+  --color-primary: #f5c518;
+  --color-primary-soft: #ffe066;
+  --color-accent: #ff8c42;
+  --color-danger: #ff4444;
+  --color-whatsapp: #25d366;
+  --font-display: 'Bangers', 'Impact', cursive;
+  --font-sans: 'Nunito', system-ui, sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-bg-deep);
+  color: #fff;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: 0.03em;
+}
+
+/* Fondo degradado que comparten todas las pantallas */
+.screen-bg {
+  background: linear-gradient(160deg, #1e0a3c 0%, #0d0520 100%);
+  min-height: 100dvh;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(64px);
+  pointer-events: none;
+}
+
+.card-glass {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(6px);
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: #1e0a3c;
+  box-shadow: 0 8px 32px rgba(245, 197, 24, 0.35);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  box-shadow: none;
+}
+
+.text-glow {
+  text-shadow: 0 0 30px rgba(245, 197, 24, 0.5);
+}
+
+/* El canvas del juego no debe hacer scroll ni selección */
+.game-canvas-host {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  overflow: hidden;
+}
