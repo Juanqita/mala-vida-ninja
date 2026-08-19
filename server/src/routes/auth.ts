@@ -96,10 +96,16 @@ router.post('/auth/login', ipLimiter, phoneLimiter, async (req, res): Promise<vo
   }
 
   // Sesión de juego: sin esto no se puede enviar puntaje.
-  const expiresAt = new Date(Date.now() + 15 * 60_000);
+  //
+  // `startedAt` se fija con el reloj de ESTE proceso, no con el NOW() de la base
+  // de datos. Si la base está en otro servidor (Neon, Supabase) su reloj puede
+  // ir unos segundos distinto al de la app, y al comparar tiempos la partida
+  // parecería más corta de lo que fue: el anti-trampa la rechazaría sin razón.
+  const startedAt = new Date();
+  const expiresAt = new Date(startedAt.getTime() + 15 * 60_000);
   const [session] = await db
     .insert(gameSessions)
-    .values({ playerId: player.id, playDate: today, expiresAt })
+    .values({ playerId: player.id, playDate: today, startedAt, expiresAt })
     .returning();
 
   const token = signPlayerToken({

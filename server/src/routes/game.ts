@@ -90,9 +90,13 @@ router.post('/game/submit', async (req, res): Promise<void> => {
   }
 
   // El reloj del servidor manda: no se puede reportar más tiempo del que
-  // realmente pasó desde que se abrió la sesión.
+  // realmente pasó desde que se abrió la sesión. La tolerancia es generosa a
+  // propósito (relojes que no coinciden, latencia de red, animación de fin de
+  // partida): un tramposo de verdad se cae igual, porque tendría que esperar
+  // los 45 segundos completos para poder enviar un puntaje.
+  const CLOCK_TOLERANCE_SECONDS = Math.min(15, Math.max(8, env.GAME_DURATION_SECONDS / 2));
   const serverElapsed = (Date.now() - session.startedAt.getTime()) / 1000;
-  if (serverElapsed + 3 < body.durationSeconds) {
+  if (serverElapsed + CLOCK_TOLERANCE_SECONDS < body.durationSeconds) {
     reject(res, 'TIME_TRAVEL', 'Duración inconsistente con el servidor', {
       playerId,
       serverElapsed,

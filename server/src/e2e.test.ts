@@ -153,8 +153,10 @@ test('anti-cheat: duración imposible', async () => {
 });
 
 test('anti-cheat: no se puede reportar más tiempo del que pasó', async () => {
+  // Enviar el puntaje al instante diciendo que la partida duró lo máximo
+  // permitido: imposible, no pasó ese tiempo desde que se abrió la sesión.
   const l = await login(nextPhone());
-  const { status, body } = await submit(l.body.token, 100, { durationSeconds: DURATION });
+  const { status, body } = await submit(l.body.token, 100, { durationSeconds: DURATION + 5 });
   assert.equal(status, 400);
   assert.equal(body.code, 'TIME_TRAVEL');
 });
@@ -180,6 +182,35 @@ test('terminar por bomba sí puede durar menos', async () => {
   });
   assert.equal(status, 201);
   assert.ok(body.reward.code);
+});
+
+test('el reloj de la base de datos desfasado NO invalida la partida', async () => {
+  // Reproduce el caso real: la app corre en tu PC y la base está en Neon. Si los
+  // relojes no coinciden por unos segundos, la partida parecía "más corta" de lo
+  // que fue y el anti-trampa la rechazaba con "Duración inconsistente".
+  const { default: pg } = await import('pg');
+  const url =
+    process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL ?? '';
+  const client = new pg.Client({ connectionString: url });
+  await client.connect();
+
+  try {
+    const phone = nextPhone();
+    const l = await login(phone);
+
+    // Simula que la base guardó la hora 6 segundos adelantada respecto a la app.
+    await client.query(
+      `UPDATE game_sessions SET started_at = started_at + interval '6 seconds'
+       WHERE player_id = (SELECT id FROM players WHERE phone = $1)`,
+      [phone],
+    );
+
+    await sleep(DURATION * 1000 + 200);
+    const res = await submit(l.body.token, 400);
+    assert.equal(res.status, 201, `debió aceptarse, pero respondió ${JSON.stringify(res.body)}`);
+  } finally {
+    await client.end();
+  }
 });
 
 test('anti-cheat: token inventado', async () => {

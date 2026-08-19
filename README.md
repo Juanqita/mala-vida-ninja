@@ -29,23 +29,66 @@ mala-vida/
 
 ## Arrancar en local
 
-Necesitas Node 20+ y una base PostgreSQL (local, o gratis en Neon/Supabase).
+Necesitas **Node 20+** y una base **PostgreSQL**. Si no quieres instalar Postgres
+en tu máquina, crea una gratis en [neon.tech](https://neon.tech) (2 minutos, no
+se duerme) y usa esa URL: sirve perfecto para probar en local.
 
 ```bash
 npm install
-cp .env.example .env          # y edita DATABASE_URL, SESSION_SECRET y ADMIN_KEY
-npm run db:generate           # solo si cambiaste el esquema
-npm run db:migrate            # crea las tablas
-npm run db:seed               # carga el catálogo de premios
-npm run dev:server            # API en http://localhost:8080
-npm run dev:web               # juego en http://localhost:5173
+cp .env.example .env      # Windows PowerShell: copy .env.example .env
+```
+
+Edita `.env` y pon como mínimo:
+
+```ini
+DATABASE_URL=postgres://usuario:clave@host:5432/mala_vida
+DATABASE_SSL=true         # true en Neon/Supabase, false si es Postgres local
+SESSION_SECRET=lo-que-sea-largo-y-aleatorio
+ADMIN_KEY=admin123
+```
+
+Después:
+
+```bash
+npm run setup             # crea las tablas y carga el catálogo de premios
+npm run dev:server        # terminal 1 → API en http://localhost:8080
+npm run dev:web           # terminal 2 → juego en http://localhost:5173
 ```
 
 - Juego: http://localhost:5173
 - Panel admin: http://localhost:8080/admin (clave = `ADMIN_KEY`)
 - Salud: http://localhost:8080/api/health
 
-En producción un solo proceso sirve las dos cosas: `npm run build && npm start`.
+> El juego en `5173` habla con la API de `8080` mediante el proxy de Vite, así
+> que no tienes que configurar `VITE_API_URL` para probar en local.
+
+**Probar como si fuera producción** (un solo proceso sirviendo todo):
+
+```bash
+npm run build && npm start   # todo en http://localhost:8080
+```
+
+### Postgres local con Docker (alternativa a Neon)
+
+```bash
+docker run --name mala-vida-db -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=mala_vida -p 5432:5432 -d postgres:16
+```
+
+Con eso, en `.env`:
+`DATABASE_URL=postgres://postgres:postgres@localhost:5432/mala_vida` y
+`DATABASE_SSL=false`.
+
+### Trucos para probar sin esperar
+
+- **Volver a jugar hoy con tu número:** panel admin → Verificar → busca tu
+  número → *Dejar jugar otra vez hoy*.
+- **Partidas cortas:** `GAME_DURATION_SECONDS=10` en `.env` (el juego se ajusta
+  solo al valor del servidor).
+- **Ver la cascada de premios:** en Ajustes baja el stock de un premio a 0 y
+  juega: te dará el siguiente disponible con el aviso de "ya se agotaron".
+- **Empezar de cero:** panel admin → Ajustes → zona peligrosa → *Borrar todas
+  las partidas y premios* (los jugadores se conservan).
 
 ---
 
