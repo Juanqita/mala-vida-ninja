@@ -39,7 +39,11 @@ function pickWeighted(pool: ItemConfig[]): ItemConfig {
 interface ActiveItem {
   sprite: Phaser.GameObjects.Image;
   label: Phaser.GameObjects.Text;
+  /** Anillo pulsante: solo lo lleva la bomba. */
+  halo?: Phaser.GameObjects.Image;
   config: ItemConfig;
+  /** Radio real de este elemento (la bomba es más grande). */
+  radius: number;
   x: number;
   y: number;
   vx: number;
@@ -163,25 +167,66 @@ export class GameScene extends Phaser.Scene {
    * Cada tipo de producto se dibuja UNA vez a textura. Después cada elemento en
    * pantalla es solo un Image reutilizado del pool: así el juego se mantiene a
    * 60 FPS incluso con muchos elementos volando.
+   *
+   * Lo que se corta y lo que no se distingue por FORMA, no solo por color:
+   * los productos son discos limpios de color claro, y lo que resta puntos
+   * lleva un anillo a rayas tipo cinta de peligro.
    */
   private buildTextures() {
-    const r = GAME.itemRadius;
-    const size = (r + 12) * 2;
-
     for (const item of ITEMS) {
       const key = `item-${item.type}`;
       if (this.textures.exists(key)) continue;
 
+      const r = GAME.itemRadius * (item.scale ?? 1);
+      const pad = 18;
+      const size = (r + pad) * 2;
+      const c = size / 2;
+
       const g = this.make.graphics({ x: 0, y: 0 }, false);
-      g.fillStyle(item.glow, 0.25);
-      g.fillCircle(size / 2, size / 2, r + 10);
+
+      // Halo: más intenso en lo peligroso, suave en los productos.
+      g.fillStyle(item.glow, item.positive ? 0.22 : 0.32);
+      g.fillCircle(c, c, r + pad * 0.85);
+
+      // Cuerpo
       g.fillStyle(item.color, 1);
-      g.fillCircle(size / 2, size / 2, r);
-      g.fillStyle(0xffffff, 0.22);
-      g.fillEllipse(size / 2 - 10, size / 2 - 12, r * 0.8, r * 0.5);
-      g.lineStyle(2, 0xffffff, 0.4);
-      g.strokeCircle(size / 2, size / 2, r);
+      g.fillCircle(c, c, r);
+
+      // Brillo superior: le da volumen al disco
+      g.fillStyle(0xffffff, item.positive ? 0.3 : 0.12);
+      g.fillEllipse(c - r * 0.28, c - r * 0.33, r * 0.85, r * 0.5);
+
+      if (item.positive) {
+        g.lineStyle(3, 0xffffff, 0.75);
+        g.strokeCircle(c, c, r);
+      } else {
+        // Anillo a rayas: alterna el color de peligro con blanco.
+        const segments = 14;
+        const stripe = item.endsGame ? 0xff2d2d : 0xffb020;
+        for (let i = 0; i < segments; i++) {
+          const a0 = (i / segments) * Math.PI * 2;
+          const a1 = ((i + 0.55) / segments) * Math.PI * 2;
+          g.lineStyle(7, i % 2 === 0 ? stripe : 0xffffff, 0.95);
+          g.beginPath();
+          g.arc(c, c, r - 3, a0, a1);
+          g.strokePath();
+        }
+        g.lineStyle(2, 0x000000, 0.5);
+        g.strokeCircle(c, c, r - 7);
+      }
+
       g.generateTexture(key, size, size);
+      g.destroy();
+    }
+
+    // Halo pulsante que solo usa la bomba: imposible confundirla.
+    if (!this.textures.exists('bomb-halo')) {
+      const r = GAME.itemRadius * 1.18;
+      const size = (r + 26) * 2;
+      const g = this.make.graphics({ x: 0, y: 0 }, false);
+      g.lineStyle(6, 0xff2d2d, 0.9);
+      g.strokeCircle(size / 2, size / 2, r + 12);
+      g.generateTexture('bomb-halo', size, size);
       g.destroy();
     }
   }
@@ -324,7 +369,10 @@ export class GameScene extends Phaser.Scene {
       label.setText(text).setActive(true).setVisible(true).setAlpha(1).setScale(1);
       return label;
     }
-    return this.add.text(0, 0, text, { fontSize: '30px' }).setOrigin(0.5).setDepth(11);
+    return this.add
+      .text(0, 0, text, { fontSize: `${GAME.emojiSize}px` })
+      .setOrigin(0.5)
+      .setDepth(11);
   }
 
   private release(item: ActiveItem) {
@@ -332,20 +380,41 @@ export class GameScene extends Phaser.Scene {
     item.label.setActive(false).setVisible(false);
     this.spritePool.push(item.sprite);
     this.labelPool.push(item.label);
+    if (item.halo) {
+      this.tweens.killTweensOf(item.halo);
+      item.halo.destroy();
+      item.halo = undefined;
+    }
   }
 
   private spawnItem() {
     if (!this.running) return;
 
     const config = Math.random() < GAME.negativeChance ? pickWeighted(NEGATIVE) : pickWeighted(POSITIVE);
-    const x = Phaser.Math.Between(GAME.itemRadius + 12, this.W - GAME.itemRadius - 12);
-    const y = this.H + 80;
+    const radius = GAME.itemRadius * (config.scale ?? 1);
+    const x = Phaser.Math.Between(radius + 12, this.W - radius - 12);
+    const y = this.H + 90;
 
     const sprite = this.takeSprite(`item-${config.type}`);
     sprite.setPosition(x, y).setRotation(0);
 
     const label = this.takeLabel(config.emoji);
-    label.setPosition(x, y);
+    label.setPosition(x, y).setScale(config.scale ?? 1);
+
+    // La bomba, además, late: es la única que puede acabar la partida.
+    let halo: Phaser.GameObjects.Image | undefined;
+    if (config.endsGame) {
+      halo = this.add.image(x, y, 'bomb-halo').setDepth(9).setAlpha(0.9);
+      this.tweens.add({
+        targets: halo,
+        scale: 1.22,
+        alpha: 0.35,
+        duration: 450,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    }
 
     // Altura del salto proporcional a la pantalla: en un celular alto no se
     // pierde arriba, y en uno pequeño sigue llegando a la mitad.
@@ -354,7 +423,9 @@ export class GameScene extends Phaser.Scene {
     this.items.push({
       sprite,
       label,
+      halo,
       config,
+      radius,
       x,
       y,
       vx: Phaser.Math.Between(-90, 90),
@@ -394,8 +465,9 @@ export class GameScene extends Phaser.Scene {
 
         item.sprite.setPosition(item.x, item.y).setRotation(item.rot);
         item.label.setPosition(item.x, item.y);
+        item.halo?.setPosition(item.x, item.y);
 
-        if (item.y > this.H + 130) {
+        if (item.y > this.H + 140) {
           this.release(item);
           this.items.splice(i, 1);
         }
@@ -442,7 +514,7 @@ export class GameScene extends Phaser.Scene {
 
     for (const item of this.items) {
       if (item.sliced) continue;
-      if (lineHitsCircle(this.prevX, this.prevY, px, py, item.x, item.y, GAME.itemRadius)) {
+      if (lineHitsCircle(this.prevX, this.prevY, px, py, item.x, item.y, item.radius)) {
         this.sliceItem(item);
       }
     }
@@ -555,7 +627,7 @@ export class GameScene extends Phaser.Scene {
   private bombEffect(x: number, y: number) {
     const ring = this.add.graphics().setDepth(55);
     ring.lineStyle(6, 0xff0000, 1);
-    ring.strokeCircle(x, y, GAME.itemRadius);
+    ring.strokeCircle(x, y, GAME.itemRadius * 1.18);
     this.tweens.add({
       targets: ring,
       scaleX: 3,

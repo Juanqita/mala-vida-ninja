@@ -5,7 +5,10 @@ services:
     name: mala-vida-game
     runtime: node
     plan: free
-    buildCommand: npm install && npm run build
+    # --include=dev es obligatorio: con NODE_ENV=production npm omite las
+    # devDependencies, y vite/esbuild/typescript viven ahí. Sin esto el build
+    # falla con "vite: not found".
+    buildCommand: npm install --include=dev && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:

@@ -31,9 +31,13 @@ escribir a mano `ADMIN_KEY`.
 
 1. *New → PostgreSQL*. Plan free. Copia el **Internal Database URL**.
 2. *New → Web Service*, conecta el repo:
-   - Build command: `npm install && npm run build`
+   - Build command: `npm install --include=dev && npm run build`
    - Start command: `npm start`
    - Health check path: `/api/health`
+
+   > El `--include=dev` no es opcional: como `NODE_ENV=production` está entre
+   > las variables, npm se salta las devDependencies y ahí viven `vite`,
+   > `esbuild` y `typescript`. Sin eso el build muere con `vite: not found`.
 3. Environment:
 
 | Variable | Valor |
@@ -64,7 +68,8 @@ Listo: el juego queda en `https://tu-servicio.onrender.com` y el panel en
 2. *New → Database → PostgreSQL*. Railway inyecta `DATABASE_URL` solo.
 3. En el servicio, Variables: `SESSION_SECRET`, `ADMIN_KEY`, `WHATSAPP_NUMBER`,
    `TIMEZONE=America/Bogota`, `NODE_ENV=production`, `DATABASE_SSL=false`.
-4. Settings → Build command `npm install && npm run build`, Start `npm start`.
+4. Settings → Build command `npm install --include=dev && npm run build`,
+   Start `npm start`.
 5. Settings → Networking → *Generate Domain*.
 
 ---
