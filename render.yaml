@@ -34,6 +34,10 @@ services:
         value: '48'
       - key: GAMES_PER_DAY
         value: '1'
+      # URL pública final del juego. Se usa al compilar para que la vista previa
+      # del link en WhatsApp muestre el logo. Ej: https://juega.malavida.co
+      - key: VITE_PUBLIC_URL
+        sync: false
       - key: CORS_ORIGIN
         value: '*'
 

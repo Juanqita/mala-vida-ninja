@@ -92,6 +92,55 @@ sigue viviendo en el backend: `https://tu-backend.onrender.com/admin`.
 
 ---
 
+## El link que vas a compartir
+
+De peor a mejor, según cuánto quieras invertir:
+
+**a) Renombrar el servicio (gratis, 1 minuto).** Render arma la URL con el
+nombre del servicio: si lo llamas `malavida`, queda
+`https://malavida.onrender.com`. Settings → Name. Ojo: cambia la URL, así que
+hazlo antes de repartir el link.
+
+**b) Acortador (gratis).** `bit.ly/malavida-juego` o, mejor, `dub.co` que
+permite links con tu propio dominio. Sirve para WhatsApp, pero el link no dice
+nada de la marca y no puedes cambiarle el destino si el acortador cierra.
+
+**c) Dominio propio (~US$10–15 al año, lo que yo haría).** Compras
+`malavida.co` o `juegamalavida.com` en Porkbun o Namecheap, y en Render:
+Settings → Custom Domains → *Add* → escribes `juega.malavida.co`. Render te da
+un CNAME que pegas en el panel del dominio, y el certificado HTTPS lo emite
+solo. Queda `https://juega.malavida.co` — corto, tuyo, y si algún día cambias
+de servidor el link sigue siendo el mismo.
+
+Si ya tienen dominio del restaurante, el paso (c) es gratis: basta con crear el
+subdominio `juega.` apuntando a Render.
+
+### Que el link se vea bonito en WhatsApp
+
+Cuando pegas la URL en un chat, WhatsApp muestra título, descripción y una
+imagen. Esa imagen tiene que ir con dirección absoluta, así que se define al
+compilar:
+
+```
+VITE_PUBLIC_URL=https://juega.malavida.co
+```
+
+Agrégala en las variables de entorno de Render (o Railway) junto a las demás.
+Sin ella el juego funciona igual, pero la vista previa sale sin logo.
+
+Para verificar cómo se ve antes de repartirlo, pega la URL en
+[Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/) —
+WhatsApp usa la misma vista previa y ahí puedes forzar que la refresque.
+
+### En el local, lo que manda es el QR
+
+Nadie escribe una URL desde una mesa. Genera un QR de tu link y ponlo en las
+mesas, en la caja y en las cajas de domicilio. Cualquier generador sirve; si el
+link es corto, el QR sale menos denso y escanea más rápido incluso impreso
+pequeño.
+
+---
+
 ## Base de datos gratis (si no usas la del proveedor)
 
 - **Neon** (neon.tech): plan free, no se duerme. `DATABASE_SSL=true`.
